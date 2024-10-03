@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Management Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 20px;
+        }
+        .card {
+            margin: 20px;
+        }
+        .chart-container {
+            width: 100%;
+            max-height: 250px !important;
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">VM Management Dashboard</h1>
+        <div class="row">
+            <!-- Statistics Cards -->
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Total VMs</h5>
+                        <p id="totalVMs" class="card-text">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title">Running VMs</h5>
+                        <p id="runningVMs" class="card-text">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-danger">
+                    <div class="card-body">
+                        <h5 class="card-title">Stopped VMs</h5>
+                        <p id="stoppedVMs" class="card-text">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">Suspended VMs</h5>
+                        <p id="suspendedVMs" class="card-text">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VM Table -->
+        <h2 class="mt-4">VM Details</h2>
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>VM ID</th>
+                    <th>VM Name</th>
+                    <th>Status</th>
+                    <th>OS</th>
+                    <th>CPU Usage (%)</th>
+                    <th>Memory Usage (GB)</th>
+                    <th>Disk Usage (%)</th>
+                    <th>Assigned User</th>
+                    <th>Created On</th>
+                    <th>Last Active On</th>
+                </tr>
+            </thead>
+            <tbody id="vmTable">
+                <!-- Rows will be injected by JavaScript -->
+            </tbody>
+        </table>
+
+        <!-- Charts Section -->
+        <h2 class="mt-5">Insights & Charts</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <h3>VM Status Distribution</h3>
+                <canvas id="statusPieChart" class="chart-container"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h3>CPU Usage (Per VM)</h3>
+                <canvas id="cpuBarChart" class="chart-container"></canvas>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <h3>Memory Usage (Per VM)</h3>
+                <canvas id="memoryBarChart" class="chart-container"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h3>Disk Usage (Per VM)</h3>
+                <canvas id="diskBarChart" class="chart-container"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mock VM Data
+        const vmData = [
+            {VM_ID: 'VM001', VM_Name: 'WebServer01', Status: 'Running', OS: 'Ubuntu 20.04 LTS', CPU_Usage: 35, Memory_Usage: 4, Disk_Usage: 50, Assigned_User: 'John Doe', Created_On: '2024-01-15', Last_Active_On: '2024-09-30'},
+            {VM_ID: 'VM002', VM_Name: 'Database01', Status: 'Stopped', OS: 'Windows Server 2019', CPU_Usage: 0, Memory_Usage: 16, Disk_Usage: 70, Assigned_User: 'Mary Smith', Created_On: '2023-12-10', Last_Active_On: '2024-09-25'},
+            {VM_ID: 'VM003', VM_Name: 'AppServer01', Status: 'Running', OS: 'CentOS 7', CPU_Usage: 55, Memory_Usage: 8, Disk_Usage: 60, Assigned_User: 'Alan Brown', Created_On: '2024-06-18', Last_Active_On: '2024-09-29'},
+            {VM_ID: 'VM004', VM_Name: 'DevServer01', Status: 'Suspended', OS: 'Ubuntu 22.04 LTS', CPU_Usage: 10, Memory_Usage: 2, Disk_Usage: 45, Assigned_User: 'Emily Clark', Created_On: '2024-02-02', Last_Active_On: '2024-09-28'},
+            {VM_ID: 'VM005', VM_Name: 'TestServer01', Status: 'Running', OS: 'Red Hat 8', CPU_Usage: 45, Memory_Usage: 6, Disk_Usage: 35, Assigned_User: 'Daniel White', Created_On: '2024-03-30', Last_Active_On: '2024-09-30'},
+            {VM_ID: 'VM006', VM_Name: 'BackupServer01', Status: 'Stopped', OS: 'Ubuntu 18.04 LTS', CPU_Usage: 0, Memory_Usage: 32, Disk_Usage: 80, Assigned_User: 'Rachel Green', Created_On: '2023-11-05', Last_Active_On: '2024-09-20'},
+            {VM_ID: 'VM007', VM_Name: 'WebServer02', Status: 'Running', OS: 'Windows Server 2022', CPU_Usage: 25, Memory_Usage: 8, Disk_Usage: 40, Assigned_User: 'James Taylor', Created_On: '2024-07-15', Last_Active_On: '2024-09-30'},
+            {VM_ID: 'VM008', VM_Name: 'DevServer02', Status: 'Suspended', OS: 'Debian 10', CPU_Usage: 5, Memory_Usage: 4, Disk_Usage: 55, Assigned_User: 'Patricia Johnson', Created_On: '2024-04-10', Last_Active_On: '2024-09-25'},
+            {VM_ID: 'VM009', VM_Name: 'TestServer02', Status: 'Running', OS: 'Ubuntu 20.04 LTS', CPU_Usage: 65, Memory_Usage: 8, Disk_Usage: 70, Assigned_User: 'Michael Davis', Created_On: '2024-08-01', Last_Active_On: '2024-09-29'},
+            {VM_ID: 'VM010', VM_Name: 'BackupServer02', Status: 'Stopped', OS: 'CentOS 7', CPU_Usage: 0, Memory_Usage: 64, Disk_Usage: 85, Assigned_User: 'Jennifer Lee', Created_On: '2023-10-18', Last_Active_On: '2024-09-18'}
+        ];
+
+        // Inject VM Data into the Table
+        const vmTable = document.getElementById('vmTable');
+        let runningCount = 0, stoppedCount = 0, suspendedCount = 0;
+        let cpuUsage = [], memoryUsage = [], diskUsage = [], vmNames = [];
+
+        vmData.forEach(vm => {
+            let row = `<tr>
+                <td>${vm.VM_ID}</td>
+                <td>${vm.VM_Name}</td>
+                <td>${vm.Status}</td>
+                <td>${vm.OS}</td>
+                <td>${vm.CPU_Usage}</td>
+                <td>${vm.Memory_Usage}</td>
+                <td>${vm.Disk_Usage}</td>
+                <td>${vm.Assigned_User}</td>
+                <td>${vm.Created_On}</td>
+                <td>${vm.Last_Active_On}</td>
+            </tr>`;
+            vmTable.innerHTML += row;
+
+            // Count the statuses
+            if (vm.Status === 'Running') runningCount++;
+            if (vm.Status === 'Stopped') stoppedCount++;
+            if (vm.Status === 'Suspended') suspendedCount++;
+
+            // Collect data for the charts
+            vmNames.push(vm.VM_Name);
+            cpuUsage.push(vm.CPU_Usage);
+            memoryUsage.push(vm.Memory_Usage);
+            diskUsage.push(vm.Disk_Usage);
+        });
+
+        // Update the cards with statistics
+        document.getElementById('totalVMs').innerText = vmData.length;
+        document.getElementById('runningVMs').innerText = runningCount;
+        document.getElementById('stoppedVMs').innerText = stoppedCount;
+        document.getElementById('suspendedVMs').innerText = suspendedCount;
+
+        // Pie Chart for VM Status Distribution
+        const statusPieChart = new Chart(document.getElementById('statusPieChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Running', 'Stopped', 'Suspended'],
+                datasets: [{
+                    data: [runningCount, stoppedCount, suspendedCount],
+                    backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Bar Chart for CPU Usage
+        const cpuBarChart = new Chart(document.getElementById('cpuBarChart'), {
+            type: 'bar',
+            data: {
+                labels: vmNames,
+                datasets: [{
+                    label: 'CPU Usage (%)',
+                    data: cpuUsage,
+                    backgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Bar Chart for Memory Usage
+        const memoryBarChart = new Chart(document.getElementById('memoryBarChart'), {
+            type: 'bar',
+            data: {
+                labels: vmNames,
+                datasets: [{
+                    label: 'Memory Usage (GB)',
+                    data: memoryUsage,
+                    backgroundColor: '#17a2b8'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Bar Chart for Disk Usage
+        const diskBarChart = new Chart(document.getElementById('diskBarChart'), {
+            type: 'bar',
+            data: {
+                labels: vmNames,
+                datasets: [{
+                    label: 'Disk Usage (%)',
+                    data: diskUsage,
+                    backgroundColor: '#ffc107'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
